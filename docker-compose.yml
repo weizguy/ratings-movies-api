@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: ratings_movies_api
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./db:/app/db
