@@ -1,12 +1,11 @@
 import express from 'express';
-import movieRouter from './features/movies/movie.routes';
-import { notFoundHandler, errorHandler } from './middleware/errorHandler';
+import { errorHandler } from './middleware/errorHandler';
+import { createMoviesFeature } from './features/movies';
 
 const app = express();
 
 app.use(express.json());
-app.use('/api', movieRouter);
-app.use(notFoundHandler);
+app.use('/api',createMoviesFeature());
 app.use(errorHandler);
 
 // Export the app instance without calling app.listen()
