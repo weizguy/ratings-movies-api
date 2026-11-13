@@ -146,4 +146,15 @@ describe('🎥 Movies Feature API Integration Tests', () => {
       expect(res.body).toHaveProperty('error');
     });
   });
+
+  describe('pagination', () => {
+    it('honors pageSize and caps it at the maximum', async () => {
+      const small = await request(app).get('/api/movies?pageSize=10');
+      expect(small.body.results).toHaveLength(10);
+      expect(small.body.pagination.pageSize).toBe(10);
+    
+      const huge = await request(app).get('/api/movies?pageSize=5000');
+      expect(huge.body.pagination.pageSize).toBe(100);
+    }); 
+  }); 
 });

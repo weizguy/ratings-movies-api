@@ -1,8 +1,8 @@
 import { NotFoundError } from '../../common/errors';
 import {
-  DEFAULT_PAGE_SIZE,
   paginate,
   toPageQuery,
+  type PageRequest,
   type PageQuery,
   type Paginated,
 } from '../../common/pagination';
@@ -22,31 +22,25 @@ export interface RatingsReader {
 export const normalizeGenre = (raw: string): string =>
   raw.toLowerCase().replace(/-/g, ' ').trim();
 
-export function createMovieService(
-  movieRepo: MovieRepository,
-  ratingsReader: RatingsReader,
-  pageSize: number = DEFAULT_PAGE_SIZE,
-) {
+export function createMovieService(movieRepo: MovieRepository, ratingsReader: RatingsReader) {
  
   async function toPage(
     fetch: (query: PageQuery) => Promise<PagedRows>,
-    page: number,
+    { page, pageSize }: PageRequest,
   ): Promise<Paginated<MovieSummary>> {
     const { rows, total } = await fetch(toPageQuery(page, pageSize));
     return paginate(rows.map(toMovieSummary), total, page, pageSize);
   }
 
   return {
-    list(page: number): Promise<Paginated<MovieSummary>> {
-      return toPage((query) => movieRepo.findAll(query), page);
+    list(req: PageRequest) {
+      return toPage((q) => movieRepo.findAll(q), req);
     },
-
-    byYear(year: number, sort: SortOrder, page: number): Promise<Paginated<MovieSummary>> {
-      return toPage((query) => movieRepo.findByYear(year, sort, query), page);
+    byYear(year: number, sort: SortOrder, req: PageRequest) {
+      return toPage((q) => movieRepo.findByYear(year, sort, q), req);
     },
-
-    byGenre(genre: string, page: number): Promise<Paginated<MovieSummary>> {
-      return toPage((query) => movieRepo.findByGenre(normalizeGenre(genre), query), page);
+    byGenre(genre: string, req: PageRequest) {
+      return toPage((q) => movieRepo.findByGenre(normalizeGenre(genre), q), req);
     },
 
     /** Looks up the movie by imdbId, then its ratings by the internal movieId. */

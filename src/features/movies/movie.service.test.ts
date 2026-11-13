@@ -2,6 +2,7 @@
 import { createMovieService, normalizeGenre, type RatingsReader } from './movie.service';
 import type { MovieRepository, MovieRow } from './movie.repository';
 import { NotFoundError } from '../../common/errors';
+import { parsePageSize } from '../../common/pagination';
 
 const fakeRepo = (overrides: Partial<MovieRepository> = {}): MovieRepository => ({
   findAll: jest.fn().mockResolvedValue({ rows: [], total: 0 }),
@@ -76,7 +77,7 @@ describe('MovieService paging', () => {
     const findByGenre = jest.fn().mockResolvedValue({ rows: [], total: 0 });
     const service = createMovieService(fakeRepo({ findByGenre }), fakeRatings());
 
-    await service.byGenre('Science-Fiction', 1);
+    await service.byGenre('Science-Fiction', { page: 1, pageSize: 50 });
 
     expect(findByGenre).toHaveBeenCalledWith('science fiction', { limit: 50, offset: 0 });
   });
@@ -85,9 +86,18 @@ describe('MovieService paging', () => {
     const findAll = jest.fn().mockResolvedValue({ rows: [], total: 120 });
     const service = createMovieService(fakeRepo({ findAll }), fakeRatings());
 
-    const result = await service.list(3);
+    const result = await service.list({ page: 3, pageSize: 50 });
 
     expect(findAll).toHaveBeenCalledWith({ limit: 50, offset: 100 });
     expect(result.pagination).toEqual({ page: 3, pageSize: 50, total: 120, totalPages: 3 });
+  });
+
+  describe('parsePageSize', () => {
+    it.each([
+      [undefined, 50], ['abc', 50], ['0', 50], ['-5', 50],
+      ['10', 10], ['100', 100], ['500', 100],
+    ])('parses %p as %p', (input, expected) => {
+      expect(parsePageSize(input)).toBe(expected);
+    });
   });
 });
