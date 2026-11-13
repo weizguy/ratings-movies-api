@@ -111,4 +111,39 @@ describe('🎥 Movies Feature API Integration Tests', () => {
       expect(responseSpaced.body.results.length).toEqual(responseHyphen.body.results.length);
     });
   });
+
+  // more tests based on bug fixes
+  describe('GET /api/movies/year/:year validation', () => {
+    it.each(['19', '%', 'abcd', '19955'])('returns 400 for invalid year %p', async (year) => {
+      const res = await request(app).get(`/api/movies/year/${encodeURIComponent(year)}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toHaveProperty('error');
+    });
+  });
+  
+  describe('pagination', () => {
+    it('defaults an invalid page to 1 in the response metadata', async () => {
+      const res = await request(app).get('/api/movies?page=abc');
+      expect(res.status).toBe(200);
+      expect(res.body.pagination.page).toBe(1);
+    });
+  
+    it('returns different movies on page 1 and page 2', async () => {
+      const [p1, p2] = await Promise.all([
+        request(app).get('/api/movies?page=1'),
+        request(app).get('/api/movies?page=2'),
+      ]);
+      const ids1 = new Set(p1.body.results.map((m: { imdbId: string }) => m.imdbId));
+      const overlap = p2.body.results.filter((m: { imdbId: string }) => ids1.has(m.imdbId));
+      expect(overlap).toHaveLength(0);
+    });
+  });
+  
+  describe('Unknown routes', () => {
+    it('returns JSON 404 for unknown routes', async () => {
+      const res = await request(app).get('/api/nope');
+      expect(res.status).toBe(404);
+      expect(res.body).toHaveProperty('error');
+    });
+  });
 });
