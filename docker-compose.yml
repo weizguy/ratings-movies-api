@@ -1,10 +1,29 @@
-version: '3.8'
-
 services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: movies
+      POSTGRES_PASSWORD: movies
+      POSTGRES_DB: movies
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro   # runs schema SQL on first start
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movies -d movies"]
+      interval: 5s
+      retries: 10
+
   api:
     build: .
-    container_name: ratings_movies_api
     ports:
       - "3000:3000"
-    volumes:
-      - ./db:/app/db
+    environment:
+      DATABASE_URL: postgres://movies:movies@db:5432/movies
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

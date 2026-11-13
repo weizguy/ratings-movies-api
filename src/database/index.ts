@@ -1,14 +1,11 @@
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import * as movieSchema from '../features/movies/movie.schema';
+import { Pool, types } from 'pg';
 
-const appSchema = {
-  ...movieSchema,
-  // Future features
-};
+// Keep DATE as 'YYYY-MM-DD' strings (pg converts to JS Date by default)
+types.setTypeParser(1082, (value) => value);
+// BIGINT comes back as a string by default; budgets/revenue fit safely in a JS number
+types.setTypeParser(20, (value) => Number(value));
 
-const moviesFile = new Database('db/movies.db');
-const ratingsFile = new Database('db/ratings.db');
-
-export const moviesDb = drizzle(moviesFile, { schema: appSchema });
-export const ratingsDb = drizzle(ratingsFile, { schema: appSchema });
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10,
+});

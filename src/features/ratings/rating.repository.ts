@@ -1,16 +1,13 @@
-import { avg, eq } from 'drizzle-orm';
-import type { ratingsDb } from '../../database';
-import { ratings } from './rating.schema'; 
+import type { Pool } from 'pg';
 
-export function createRatingRepository(db: typeof ratingsDb) {
+export function createRatingRepository(pool: Pool) {
   return {
-    getAverageForMovie: async (movieId: number): Promise<number | null> => {
-      const row = await db
-        .select({ avg: avg(ratings.rating) })
-        .from(ratings)
-        .where(eq(ratings.movieId, movieId))
-        .get();
-      return row?.avg != null ? Number(row.avg) : null;
+    async getAverageForMovie(movieId: number): Promise<number | null> {
+      const result = await pool.query<{ avg: number | null }>(
+        'SELECT avg(rating)::float8 AS avg FROM ratings.ratings WHERE movie_id = $1',
+        [movieId],
+      );
+      return result.rows[0]?.avg ?? null;
     },
   };
 }
